@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <h1 class="text-danger mb-4">Issue Blood</h1>
+
+    <form method="POST">
+
+        <!-- Select Requester -->
+        <div class="form-group mb-3">
+            <label>Select Requester</label>
+            <select id="requester_id" name="requester_id" class="form-control" required>
+                <option value="">-- Select Requester --</option>
+                {% for r in requesters %}
+                    <option value="{{ r.id }}">{{ r.name }} {% if r.blood_type %}({{ r.blood_type }}){% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Requester Blood Type Auto-fill -->
+        <div class="form-group mb-3">
+            <label>Requester Blood Type</label>
+            <input id="blood_type" type="text" class="form-control" readonly disabled>
+        </div>
+
+        <!-- From Donor Checkbox -->
+        <div class="form-group mb-3">
+            <input type="checkbox" id="from_donor" name="from_donor">
+            <label for="from_donor">From Donor</label>
+        </div>
+
+        <!-- Donor & Appointment Section -->
+        <div id="donor_section" style="display:none;">
+
+            <!-- Donor Selection -->
+            <div class="form-group mb-3">
+                <label>Select Donor</label>
+                <select id="donor_id" name="donor_id" class="form-control">
+                    <option value="">-- Select Donor --</option>
+                </select>
+            </div>
+
+            <!-- Appointment Date -->
+            <div class="form-group mb-3">
+                <label>Appointment Date</label>
+                <input type="date" id="appointment_date" name="appointment_date" class="form-control">
+            </div>
+
+        </div>
+
+        <button class="btn btn-primary">Submit</button>
+
+    </form>
+</div>
+
+<script>
+// debug helper
+function debugLog(...args) {
+    if (window.console && console.log) console.log(...args);
+}
+
+// Fetch requester blood type + donor list
+document.getElementById('requester_id').addEventListener('change', function () {
+    let id = this.value;
+    document.getElementById('blood_type').value = '';
+    let donorSelect = document.getElementById('donor_id');
+    donorSelect.innerHTML = '<option value="">-- Select Donor --</option>';
+
+    if (!id) return;
+
+    fetch('/issue_blood?requester_id=' + encodeURIComponent(id))
+        .then(res => {
+            if (!res.ok) throw new Error('Network response not ok');
+            return res.json();
+        })
+        .then(data => {
+            debugLog('issue_blood AJAX response:', data);
+            document.getElementById('blood_type').value = data.blood_type || '';
+
+            // populate donors (if any)
+            if (Array.isArray(data.donors) && data.donors.length > 0) {
+                data.donors.forEach(d => {
+                    let opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    donorSelect.appendChild(opt);
+                });
+            } else {
+                // optional: show a disabled no-donor option
+                let opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "No donors found for this blood type";
+                opt.disabled = true;
+                donorSelect.appendChild(opt);
+            }
+        })
+        .catch(err => {
+            console.error('AJAX error:', err);
+        });
+});
+
+// Show/hide donor section
+document.getElementById('from_donor').addEventListener('change', function () {
+    document.getElementById('donor_section').style.display = this.checked ? 'block' : 'none';
+});
+</script>
+
+{% endblock %}

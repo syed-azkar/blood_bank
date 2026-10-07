@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Blood Bank</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <style>
+
+    :root {
+      --brand: #c82333;
+      --brand-dark: #b21f2b;
+      --bg: #f6f6f6;
+      --content-bg: #ffffff;
+      --text: #222;
+      --muted: #8a8a8a;
+      --card-shadow: rgba(0,0,0,0.04);
+      --link-color: #ffffff;
+      --sidebar-bg: var(--brand);
+      --topbar-text: #ffffff;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      margin: 0;
+
+      /* Desktop / default background */
+      background-color: var(--bg);
+      background-image: url("{{ url_for('static', filename='images/bg.jpg') }}");
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;        /* fill screen */
+      background-attachment: fixed;  /* parallax-like effect */
+    }
+
+    .topbar {
+      background: var(--brand);
+      color: var(--topbar-text);
+      padding: 10px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1030;
+    }
+
+    .topbar .brand { font-weight:700; font-size:20px; }
+    .topbar .top-actions { display:flex; gap:10px; align-items:center; }
+
+    .layout {
+      display:flex;
+      min-height: calc(100vh - 52px);
+      padding-top: 52px;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      height: calc(100vh - 52px);
+      width: 220px;
+      background: var(--sidebar-bg);
+      color: var(--link-color);
+      padding: 16px 12px;
+      transition: width .18s ease;
+    }
+    .sidebar.hidden {
+      width: 0;
+      padding-left:0;
+      padding-right:0;
+      overflow:hidden;
+    }
+
+    .nav-list { list-style:none; padding-left:0; }
+    .nav-list li { margin: 10px 0; }
+    .nav-list a {
+      color:var(--link-color);
+      text-decoration:none;
+      display:block;
+      padding:10px 14px;
+      border-radius:8px;
+    }
+    .nav-list a.active,
+    .nav-list a:hover {
+      background: var(--content-bg);
+      color:var(--brand);
+    }
+
+    /* CONTENT */
+    .content {
+      flex:1;
+      padding: 22px;
+      margin-left: 220px;
+      transition: margin-left .18s ease;
+    }
+    .sidebar.hidden + .content {
+      margin-left: 0;
+    }
+
+    /* MOBILE / NARROW VIEWPORT OVERRIDES */
+    @media (max-width: 900px) {
+      .content {
+        margin-left: 0;
+        padding-top:20px;
+      }
+      .sidebar {
+        left:-220px;
+      }
+      .sidebar:not(.hidden) {
+        left:0;
+      }
+
+      /* Key: make background show full image instead of cropping */
+      body {
+        background-attachment: scroll;          /* fixed causes glitches on mobile */
+        background-position: top center;
+        background-size: contain;               /* show full image */
+        background-color: #f6f6f6;              /* fill remaining space */
+      }
+    }
+
+    .hamburger {
+      font-size:20px;
+      color:white;
+      background:none;
+      border:0;
+      cursor:pointer;
+      margin-right:12px;
+    }
+
+    footer.site-footer {
+      margin-top:30px;
+      color:var(--muted);
+    }
+
+    /* Donation history safe height */
+    .content .history-card {
+      max-height:380px !important;
+      overflow:hidden !important;
+    }
+    .content .history-card .card-body {
+      max-height:340px !important;
+      overflow-y:auto !important;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center">
+      <button id="menu-toggle" class="hamburger">&#9776;</button>
+      <div class="brand">Blood Bank</div>
+    </div>
+
+    <div class="top-actions">
+      {% if current_user.is_authenticated %}
+        <div style="color:white; text-transform:lowercase;">{{ current_user.username }}</div>
+        <a href="{{ url_for('change_password') }}" class="btn btn-sm btn-outline-light">Change Password</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light">Logout</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <h5>Menu</h5>
+      <ul class="nav-list">
+
+        {% if not current_user.is_authenticated %}
+          <li><a href="{{ url_for('register_donor') }}">Register as Donor</a></li>
+          <li><a href="{{ url_for('register_requester') }}">Register as Requester</a></li>
+
+        {% else %}
+          {% if current_user.role in ['admin','staff'] %}
+            <li><a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li><a class="{% if request.endpoint == 'requests_page' %}active{% endif %}" href="{{ url_for('requests_page') }}">View Requests</a></li>
+            <li><a class="{% if request.endpoint == 'record_donation' %}active{% endif %}" href="{{ url_for('record_donation') }}">Record Donation</a></li>
+            <li><a class="{% if request.endpoint == 'issue_blood' %}active{% endif %}" href="{{ url_for('issue_blood') }}">Issue Blood</a></li>
+            <li><a class="{% if request.endpoint == 'donations_report' %}active{% endif %}" href="{{ url_for('donations_report') }}">Donations Report</a></li>
+            <li><a class="{% if request.endpoint == 'store_report' %}active{% endif %}" href="{{ url_for('store_report') }}">Store Report</a></li>
+            <li><a class="{% if request.endpoint == 'users' %}active{% endif %}" href="{{ url_for('users') }}">Manage Users</a></li>
+
+          {% elif current_user.role == 'donor' %}
+            <li><a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li><a class="{% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('my_profile') }}">Profile</a></li>
+            <li><a href="{{ url_for('requests_page') }}">Open Blood Requests</a></li>
+            <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
+
+          {% elif current_user.role == 'requester' %}
+            <li><a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li><a class="{% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('my_profile') }}">Profile</a></li>
+            <li><a href="{{ url_for('create_request') }}">Request Blood</a></li>
+            <li><a href="{{ url_for('requests_page') }}">My Requests</a></li>
+            <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
+
+          {% endif %}
+        {% endif %}
+
+      </ul>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="margin-bottom:12px">
+            {% for category, msg in messages %}
+              <div class="alert alert-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+
+      <footer class="site-footer">
+        Blood Bank © {{ current_year() }}
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- SIDEBAR TOGGLE -->
+  <script>
+    const toggleBtn = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    function setSidebarState(hidden) {
+      hidden ? sidebar.classList.add('hidden')
+             : sidebar.classList.remove('hidden');
+      try { sessionStorage.setItem('sidebarHidden', hidden ? '1' : '0'); } catch(e){}
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = sidebar.classList.contains('hidden');
+      setSidebarState(!isHidden);
+    });
+
+    try {
+      const stored = sessionStorage.getItem('sidebarHidden');
+      const isMobile = window.matchMedia('(max-width: 900px)').matches;
+      let shouldHide = stored === '1' || (isMobile && stored === null);
+      if (stored !== null) shouldHide = stored === '1';
+      setSidebarState(shouldHide);
+    } catch(e){}
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

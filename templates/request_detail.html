@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Request #{{ (req.id if req is defined else (request.id if request is defined else '')) }}{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+
+  {# use either req or request depending on what the view provided #}
+  {% set R = req if req is defined else (request if request is defined else {}) %}
+
+  <h2>Request #{{ R.id or '' }}</h2>
+  <hr>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <dl class="row">
+        <dt class="col-sm-3">Requester</dt>
+        <dd class="col-sm-9">{{ R.requester_name or '—' }}</dd>
+
+        <dt class="col-sm-3">Blood Group</dt>
+        <dd class="col-sm-9">{{ R.blood_group or '—' }}</dd>
+
+        <dt class="col-sm-3">Units</dt>
+        <dd class="col-sm-9">{{ R.units or '—' }}</dd>
+
+        <dt class="col-sm-3">Status</dt>
+        <dd class="col-sm-9">{{ R.status or '—' }}</dd>
+
+        <dt class="col-sm-3">Assigned Donor</dt>
+        <dd class="col-sm-9">
+          {% if R.assigned_donor_id %}
+            {{ R.assigned_donor_name or ("Donor #" ~ R.assigned_donor_id) }}
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+
+        <dt class="col-sm-3">Scheduled At</dt>
+        <dd class="col-sm-9">{{ R.scheduled_at or '—' }}</dd>
+
+        <dt class="col-sm-3">Note</dt>
+        <dd class="col-sm-9">{{ R.note or '—' }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    {% set donation_id = (R.get('donation_id') if R is mapping else (R.donation_id if R is not none else None)) %}
+
+    {% if donation_id %}
+      {% set did = donation_id|string %}
+      {% if did|length > 0 and did != '0' %}
+        <a href="{{ url_for('donation_pdf', id=did|int) }}"
+           class="btn btn-success"
+           target="_blank">
+          View Receipt
+        </a>
+      {% else %}
+        <div class="alert alert-warning mt-2">
+          This request is marked <strong>{{ R.status or 'completed' }}</strong>
+          but the donation id is invalid. Contact admin.
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="alert alert-warning mt-2">
+        This request is marked <strong>{{ R.status or 'completed' }}</strong>
+        but no donation record is linked. Contact admin.
+      </div>
+
+      {% if current_user.is_authenticated and current_user.role in ['admin','staff'] %}
+        <form method="post"
+              action="{{ url_for('admin_create_donation_from_request', request_id=R.id) }}"
+              style="display:inline">
+          <button type="submit" class="btn btn-primary">
+            Create &amp; Link Donation (Admin)
+          </button>
+        </form>
+      {% endif %}
+    {% endif %}
+
+    <a class="btn btn-outline-secondary ms-2" href="{{ url_for('requests_page') }}">
+      Back to requests
+    </a>
+  </div>
+
+</div>
+{% endblock %}

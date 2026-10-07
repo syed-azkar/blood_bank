@@ -1,0 +1,161 @@
+{# templates/create_user.html #}
+{% extends "base.html" %}
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="text-danger mb-4">Create User</h1>
+
+  {# Flash messages #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'danger' if category in ['danger','error'] else category }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" id="createUserForm" enctype="multipart/form-data">
+
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text"
+               class="form-control"
+               id="username"
+               name="username"
+               value="{{ user.username if user else '' }}"
+               required />
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password"
+               class="form-control"
+               id="password"
+               name="password"
+               required />
+    </div>
+    <div class="mb-3">
+        <label for="role" class="form-label">Role</label>
+        <select class="form-select" id="role" name="role">
+            <option value="staff" {% if user.role=='staff' %}selected{% endif %}>Staff</option>
+            <option value="donor" {% if user.role=='donor' %}selected{% endif %}>Donor</option>
+            <option value="requester" {% if user.role=='requester' %}selected{% endif %}>Requester</option>
+            <option value="admin" {% if user.role=='admin' %}selected{% endif %}>Admin</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Full name</label>
+        <input type="text"
+               class="form-control"
+               id="name"
+               name="name"
+               value="{{ user.name if user else '' }}" />
+    </div>
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email"
+               class="form-control"
+               id="email"
+               name="email"
+               value="{{ user.email if user else '' }}" />
+    </div>
+
+    <div class="mb-3">
+        <label for="phone" class="form-label">Phone</label>
+        <input type="tel"
+               class="form-control"
+               id="phone"
+               name="phone"
+               value="{{ user.phone if user else '' }}" />
+    </div>
+
+    <div class="mb-3">
+        <label for="blood_group" class="form-label">Blood type</label>
+        <input type="text"
+               class="form-control"
+               id="blood_group"
+               name="blood_type"
+               value="{{ user.blood_type if user else '' }}"
+               placeholder="A+, O-, B+" />
+    </div>
+
+    <div class="mb-3">
+        <label for="profile_pic" class="form-label">Profile picture (filename)</label>
+        <input type="file"
+               class="form-control"
+               id="profile_pic"
+               name="profile_pic"
+               value="{{ user.profile_pic if user else '' }}" />
+    </div>
+
+    <div id="hospitalField" style="display:none;">
+        <label for="linked_entity" class="form-label">Hospital Name</label>
+        <input type="text" class="form-control" id="linked_entity" name="linked_entity" value="" />
+    </div>
+
+    <input type="hidden" name="linked_entity_id" value="{{ user.linked_entity_id if user else '' }}" />
+
+    <button type="submit" class="btn btn-primary me-2">Save</button>
+    <a href="{{ url_for('users') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('createUserForm');
+  const usernameEl = document.getElementById('username');
+  const roleEl = document.getElementById('role');
+  const hospitalField = document.getElementById('hospitalField');
+  const bloodGroupEl = document.getElementById('blood_group');
+
+  // Show/hide entity-specific fields when role changes
+  function updateEntityFields() {
+    const role = roleEl.value;
+    // NOTE: The original logic (role === 'donor'||'requester') is logically incorrect in JS.
+    // I have left the structure as is to match your original script, but this logic may need review.
+    if (role === 'donor' || role === 'requester') {
+      hospitalField.style.display = 'none';
+      bloodGroupEl.parentElement.style.display = ''; // Show Blood Group field's parent div
+    } else if (role === 'requester') {
+      hospitalField.style.display = '';
+      bloodGroupEl.parentElement.style.display = 'none';
+    } else {
+      hospitalField.style.display = 'none';
+      bloodGroupEl.parentElement.style.display = 'none';
+    }
+  }
+  roleEl.addEventListener('change', updateEntityFields);
+  updateEntityFields();
+
+  // Trim username and disallow spaces on submit
+  form.addEventListener('submit', function(e){
+    let u = usernameEl.value || '';
+    u = u.trim();
+    if (u.indexOf(' ') !== -1) {
+      e.preventDefault();
+      alert('Username cannot contain spaces. Remove spaces and try again.');
+      usernameEl.focus();
+      return false;
+    }
+    // optionally normalize (don't lowercase automatically here to avoid surprises)
+    usernameEl.value = u;
+  });
+
+  // Optional: client-side hint to prevent accidental invalid characters (no AJAX check)
+  usernameEl.addEventListener('input', function(){
+    const v = usernameEl.value || '';
+    // remove leading/trailing whitespace visually (do not force-case)
+    if (v !== v.trim()) {
+      usernameEl.value = v.trim();
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="text-danger mb-4">Edit User</h1> 
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'danger' if category in ['danger','error'] else category }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" id="editUserForm" enctype="multipart/form-data">
+
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text"
+               class="form-control"
+               id="username"
+               name="username"
+               value="{{ user.username if user else '' }}"
+               required
+               {% if current_user.role != 'admin' %}disabled{% endif %}
+               />
+        {% if current_user.role != 'admin' %}
+        <div class="form-text">Only Admins can change usernames.</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+        <input type="password"
+               class="form-control"
+               id="password"
+               name="password" />
+    </div>
+
+    <div class="mb-3">
+        <label for="confirm_password" class="form-label">Confirm New Password</label>
+        <input type="password"
+               class="form-control"
+               id="confirm_password"
+               name="confirm_password" />
+    </div>
+
+    <div class="mb-3">
+        <label for="role" class="form-label">Role</label>
+        <select class="form-select" id="role" name="role"
+                {% if current_user.role != 'admin' %}disabled{% endif %}>
+            <option value="staff" {% if user.role=='staff' %}selected{% endif %}>Staff</option>
+            <option value="donor" {% if user.role=='donor' %}selected{% endif %}>Donor</option>
+            <option value="requester" {% if user.role=='requester' %}selected{% endif %}>Requester</option>
+            <option value="admin" {% if user.role=='admin' %}selected{% endif %}>Admin</option>
+        </select>
+        {% if current_user.role != 'admin' %}
+        <input type="hidden" name="role" value="{{ user.role }}" />
+        <div class="form-text">Only Admins can change roles.</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Full name</label>
+        <input type="text"
+               class="form-control"
+               id="name"
+               name="name"
+               value="{{ user.name if user else '' }}" />
+    </div>
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email"
+               class="form-control"
+               id="email"
+               name="email"
+               value="{{ user.email if user else '' }}" />
+    </div>
+
+    <div class="mb-3">
+        <label for="phone" class="form-label">Phone</label>
+        <input type="tel"
+               class="form-control"
+               id="phone"
+               name="phone"
+               value="{{ user.phone if user else '' }}" />
+    </div>
+
+    <div class="mb-3" id="bloodGroupWrapper">
+        <label for="blood_type" class="form-label">Blood type</label>
+        <input type="text"
+               class="form-control"
+               id="blood_type"
+               name="blood_type"
+               value="{{ user.blood_type if user else '' }}"
+               placeholder="A+, O-, B+" />
+    </div>
+
+    <div class="mb-3">
+        <label for="profile_pic" class="form-label">Profile picture (filename)</label>
+        <input type="file"
+               class="form-control"
+               id="profile_pic"
+               name="profile_pic" />
+        <p class="form-text mt-2">Current Picture:
+            {% if user.profile_pic %}
+            <img id="currentProfilePreview" src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" style="max-height: 100px;" alt="Current Profile Picture">
+            {% else %}
+            None
+            {% endif %}
+        </p>
+    </div>
+
+    <input type="hidden" name="linked_entity_id" value="{{ user.linked_entity_id if user else '' }}" />
+
+    <button type="submit" class="btn btn-primary me-2">Save Changes</button>
+    <a href="{{ url_for('users') }}" class="btn btn-secondary">Cancel</a>
+
+    </form>
+
+</div>
+
+<script>
+(function(){
+
+  // ROLE FIELD LOGIC (hide blood group unless donor)
+  const roleEl = document.getElementById("role");
+  const bloodWrapper = document.getElementById("bloodGroupWrapper");
+
+  function updateFields(){
+    let r = roleEl.value;
+    bloodWrapper.style.display = (r === "donor") ? "" : "none";
+  }
+  roleEl.addEventListener("change", updateFields);
+  updateFields();
+
+  // FORM VALIDATION: USERNAME + PASSWORD CONFIRM
+  const form = document.getElementById("editUserForm");
+  const usernameEl = document.getElementById("username");
+  const passEl = document.getElementById("password");
+  const confirmEl = document.getElementById("confirm_password");
+
+  form.addEventListener("submit", function(e){
+    let u = usernameEl.value.trim();
+    if(u.indexOf(" ") !== -1){
+      e.preventDefault();
+      alert("Username cannot contain spaces.");
+      return false;
+    }
+    usernameEl.value = u;
+
+    if(passEl.value){
+      if(passEl.value !== confirmEl.value){
+        e.preventDefault();
+        alert("Password and confirm password do not match.");
+        return false;
+      }
+      if(passEl.value.length < 6){
+        e.preventDefault();
+        alert("Password must be at least 6 characters.");
+        return false;
+      }
+    }
+  });
+
+  // PROFILE PIC PREVIEW
+  const fileEl = document.getElementById("profile_pic");
+  const previewEl = document.getElementById("currentProfilePreview");
+
+  // Check if preview element exists before adding listener
+  if (fileEl && previewEl) {
+    fileEl.addEventListener("change", function(){
+      if(!fileEl.files || !fileEl.files[0]) return;
+
+      const f = fileEl.files[0];
+      if(f.size > 2 * 1024 * 1024){
+        alert("Image must be under 2 MB.");
+        fileEl.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e){
+        previewEl.src = e.target.result;
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+})();
+</script>
+
+{% endblock %}

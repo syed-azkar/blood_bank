@@ -1,0 +1,49 @@
+{# templates/donations_report.html #}
+{% extends 'base.html' %}
+
+{% block title %}Donations Report{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="text-danger mb-4">Donations</h1>
+    <a href="{{ url_for('export_donations', fmt='pdf') }}" class="btn btn-sm btn-outline-secondary">Export pdf</a>
+  </div>
+
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th>Donor</th>
+        <th>Blood Group</th>
+        <th>Units</th>
+        <th>Date</th>
+        <th style="width:120px" class="text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if donations %}
+        {% for donation in donations %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ donation.donor_name or '—' }}</td>
+          <td>{{ donation.blood_group or '—' }}</td>
+          <td>{{ donation.units or '—' }}</td>
+          <td>{{ donation.created_at or '—' }}</td>
+          <td class="text-center">
+            <!-- Open PDF receipt in a new tab -->
+            <a href="{{ url_for('donation_pdf', id=donation.id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" title="Open receipt (PDF)">
+              PDF
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-center">No donations found.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

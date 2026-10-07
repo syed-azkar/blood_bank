@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Register as Requester{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="text-danger mb-4">Requester Registration</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'danger' if category in ['danger','error'] else category }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" id="requesterRegisterForm">
+
+    <div class="mb-3">
+      <label for="username" class="form-label">Username</label>
+      <input type="text"
+             class="form-control"
+             id="username"
+             name="username"
+             value="{{ username if username else '' }}"
+             required />
+    </div>
+
+    <div class="mb-3">
+      <label for="password" class="form-label">Password</label>
+      <input type="password"
+             class="form-control"
+             id="password"
+             name="password"
+             required />
+    </div>
+
+    <div class="mb-3">
+      <label for="full_name" class="form-label">Full Name</label>
+      <input type="text"
+             class="form-control"
+             id="full_name"
+             name="full_name"
+             value="{{ full_name if full_name else '' }}"
+             required />
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Email</label>
+      <input type="email"
+             class="form-control"
+             id="email"
+             name="email"
+             value="{{ email if email else '' }}" />
+    </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label">Phone</label>
+      <input type="tel"
+             class="form-control"
+             id="phone"
+             name="phone"
+             value="{{ phone if phone else '' }}" />
+    </div>
+
+    <div class="mb-3">
+      <label for="blood_group" class="form-label">Blood Group</label>
+      <input type="text"
+             class="form-control"
+             id="blood_group"
+             name="blood_group"
+             value="{{ blood_group if blood_group else '' }}"
+             placeholder="A+, O-, B+, AB-"
+             required />
+    </div>
+
+    <button type="submit" class="btn btn-primary me-2">Register</button>
+    <a href="{{ url_for('login') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('requesterRegisterForm');
+  const usernameEl = document.getElementById('username');
+
+  form.addEventListener('submit', function(e){
+    let u = usernameEl.value.trim();
+    if (u.indexOf(' ') !== -1) {
+      e.preventDefault();
+      alert('Username cannot contain spaces.');
+      usernameEl.focus();
+      return false;
+    }
+    usernameEl.value = u;
+  });
+
+  usernameEl.addEventListener('input', function(){
+    const v = usernameEl.value;
+    if (v !== v.trim()) {
+      usernameEl.value = v.trim();
+    }
+  });
+})();
+</script>
+{% endblock %}

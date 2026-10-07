@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Profile – {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-md-4">
+
+            <!-- Profile Card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+
+                    {# PROFILE PICTURE FIX #}
+                    {% set pic = user.profile_pic %}
+                    {% if not pic %}
+                        {% set pic = url_for('static', filename='img/default-profile.png') %}
+                    {% else %}
+                        {% set pic = url_for('static', filename='uploads/' ~ pic) %}
+                    {% endif %}
+
+                    <img src="{{ pic }}"
+                         alt="Profile picture"
+                         class="rounded-circle mb-3"
+                         style="width:140px; height:140px; object-fit:cover;">
+
+                    <h3 class="card-title mb-0">
+                        {{ user.full_name or user.name or user.username }}
+                    </h3>
+
+                    <p class="text-muted">{{ user.role|capitalize }}</p>
+
+                    <p class="text-muted small">
+                        Member since: {{ user.created_at or 'N/A' }}
+                    </p>
+
+                    <a href="{{ url_for('edit_user', id=user.id) }}" class="btn btn-primary btn-sm me-2">Edit</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">My View</a>
+
+                </div>
+            </div>
+
+            <!-- ACCOUNT Card -->
+            <div class="card mb-4">
+                <div class="card-header">Account</div>
+                <div class="card-body">
+
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">Username</div>
+                        <div class="col-7">{{ user.username }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">Role</div>
+                        <div class="col-7">{{ user.role }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">Linked ID</div>
+                        <div class="col-7">
+                            {{ user.linked_entity_id if user.linked_entity_id else '-' }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">Active</div>
+                        <div class="col-7">
+                            {% if user.is_active %}Yes{% else %}No{% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-md-8">
+
+            <!-- PROFILE DETAILS -->
+            <div class="card mb-4">
+                <div class="card-header">Profile Details</div>
+                <div class="card-body">
+
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">Full Name</div>
+                        <div class="col-8">{{ user.full_name or user.name or 'N/A' }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">Email</div>
+                        <div class="col-8">{{ user.email or 'N/A' }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">Phone</div>
+                        <div class="col-8">{{ user.phone or 'N/A' }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">Blood Group</div>
+                        <div class="col-8">{{ user.blood_group or user.blood_type or 'N/A' }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">Profile Picture</div>
+                        <div class="col-8">{{ user.profile_pic or 'N/A' }}</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- DONOR OR REQUESTER DATA -->
+            {% if linked_type == "donor" and linked %}
+            <div class="card mb-4">
+                <div class="card-header">Recent Donations</div>
+                <div class="card-body">
+                    {% if linked.donations and linked.donations|length > 0 %}
+                        <ul class="list-group">
+                            {% for d in linked.donations %}
+                                <li class="list-group-item">
+                                    Date: {{ d.created_at }}
+                                    <br>
+                                    Units: {{ d.units or d.amount or 'N/A' }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">No donations recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if linked_type == "requester" and linked %}
+            <div class="card mb-4">
+                <div class="card-header">Recent Requests</div>
+                <div class="card-body">
+                    {% if linked.requests and linked.requests|length > 0 %}
+                        <ul class="list-group">
+                            {% for r in linked.requests %}
+                                <li class="list-group-item">
+                                    Date: {{ r.created_at }}
+                                    <br>
+                                    Blood Group: {{ r.blood_group }}
+                                    <br>
+                                    Units: {{ r.units or r.quantity or 'N/A' }}
+                                    <br>
+                                    Status: {{ r.status or 'N/A' }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">No requests recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Blood Bank Transaction History{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="text-center mb-4">Blood Bank Transaction History</h1>
+
+  <!-- OUTGOING (Issues) -->
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <div class="d-flex justify-content-between align-items-center">
+    <h4>Blood Issued (Outgoing)</h4>
+        <a href="{{ url_for('export_issues_pdf') }}" class="btn btn-outline-light">
+          PDF
+        </a>
+</div>
+    </div>
+    <div class="card-body p-0">
+      {% if issues %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:6%;">ID</th>
+                <th style="width:18%;">Date</th>
+                <th style="width:12%;">Blood Group</th>
+                <th style="width:10%;">Units</th>
+                <th style="width:24%;">Requester</th>
+                <th style="width:30%;">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in issues %}
+              <tr>
+                <td>{{ i.id }}</td>
+                <td>{{ i.created_at or i.issued_at or '—' }}</td>
+                <td>{{ i.blood_group or '—' }}</td>
+                <td>{{ i.units or 0 }}</td>
+                <td>{{ i.requester_name or 'N/A' }}</td>
+                <td>{{ i.issue_type or 'Issue' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-3 text-center text-muted">
+          No blood issue transactions have been completed yet.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Pagination + total for issues -->
+    <div class="card-footer d-flex justify-content-between align-items-center py-2">
+      <span class="small text-muted">
+        Total records: {{ issues_pagination.total if issues_pagination else 0 }}
+      </span>
+      {% if issues_pagination and issues_pagination.pages > 1 %}
+      <nav aria-label="Outgoing pagination">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item {% if not issues_pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('store_report',
+                                issues_page=issues_pagination.prev_page,
+                                donations_page=donations_pagination.page if donations_pagination else 1) }}">
+              Previous
+            </a>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">
+              Page {{ issues_pagination.page }} / {{ issues_pagination.pages }}
+            </span>
+          </li>
+          <li class="page-item {% if not issues_pagination.has_next %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('store_report',
+                                issues_page=issues_pagination.next_page,
+                                donations_page=donations_pagination.page if donations_pagination else 1) }}">
+              Next
+            </a>
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- INCOMING (Donations) -->
+  <div class="card">
+    <div class="card-header bg-success text-white">
+      <div class="d-flex justify-content-between align-items-right">
+    <h4>Blood Donations (Incoming)</h4>
+        <a href="{{ url_for('export_donations_pdf') }}" class="btn btn-outline-light">
+          PDF
+        </a>
+</div>
+    </div>
+    <div class="card-body p-0">
+      {% if donations %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:6%;">ID</th>
+                <th style="width:18%;">Date</th>
+                <th style="width:12%;">Blood Group</th>
+                <th style="width:10%;">Units</th>
+                <th style="width:24%;">Donor Name</th>
+                <th style="width:30%;">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in donations %}
+              <tr>
+                <td>{{ d.id }}</td>
+                <td>{{ d.donation_date or '—' }}</td>
+                <td>{{ d.blood_group or '—' }}</td>
+                <td>{{ d.units or 0 }}</td>
+                <td>{{ d.donor_name or '—' }}</td>
+                <td>{{ d.transaction_type or 'Donation' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-3 text-center text-muted">
+          No donation transactions have been recorded yet.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Pagination + total for donations -->
+    <div class="card-footer d-flex justify-content-between align-items-center py-2">
+      <span class="small text-muted">
+        Total records: {{ donations_pagination.total if donations_pagination else 0 }}
+      </span>
+      {% if donations_pagination and donations_pagination.pages > 1 %}
+      <nav aria-label="Incoming pagination">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item {% if not donations_pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('store_report',
+                                issues_page=issues_pagination.page if issues_pagination else 1,
+                                donations_page=donations_pagination.prev_page) }}">
+              Previous
+            </a>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">
+              Page {{ donations_pagination.page }} / {{ donations_pagination.pages }}
+            </span>
+          </li>
+          <li class="page-item {% if not donations_pagination.has_next %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('store_report',
+                                issues_page=issues_pagination.page if issues_pagination else 1,
+                                donations_page=donations_pagination.next_page) }}">
+              Next
+            </a>
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

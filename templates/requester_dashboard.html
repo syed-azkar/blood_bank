@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Requester Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0 text-danger">Dashboard</h1>
+    <a href="{{ url_for('requests_page') }}" class="btn btn-sm btn-outline-primary">
+      Your requests summary
+    </a>
+  </div>
+
+  <!-- Top cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ total_requests or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Total Requests</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ open_requests or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Open</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ accepted_requests or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Accepted / Scheduled / Completed</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ completed_requests or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Completed</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart + recent requests table -->
+  <div class="row g-3">
+    <!-- Open vs Completed chart -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header">
+          <strong>Requests: Open vs Completed</strong>
+        </div>
+        <div class="card-body">
+          <canvas id="requestsChart" height="220"></canvas>
+          {% if not chart_data or chart_data.counts|sum == 0 %}
+            <p class="text-muted mt-2 mb-0">No request data available yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent requests list -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header">
+          <strong>Your Recent Requests</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if requests %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:6%;">#</th>
+                    <th>Blood Group</th>
+                    <th style="width:10%;">Units</th>
+                    <th style="width:18%;">Status</th>
+                    <th style="width:22%;">Assigned Donor</th>
+                    <th style="width:24%;">Created / Scheduled / Completed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in requests %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ r.blood_group or '—' }}</td>
+                    <td>{{ r.units or 0 }}</td>
+                    <td>
+                      <span class="badge
+                        {% if r.status == 'open' %} bg-secondary
+                        {% elif r.status in ['accepted','scheduled'] %} bg-info
+                        {% elif r.status == 'completed' %} bg-success
+                        {% else %} bg-dark
+                        {% endif %}
+                      ">
+                        {{ r.status or 'open' }}
+                      </span>
+                    </td>
+                    <td>{{ r.assigned_donor_name or '—' }}</td>
+                    <td class="small">
+                      {% if r.created_at %}
+                        <div>Created: {{ r.created_at }}</div>
+                      {% endif %}
+                      {% if r.scheduled_at %}
+                        <div>Scheduled: {{ r.scheduled_at.replace('T',' ') if 'T' in r.scheduled_at else r.scheduled_at }}</div>
+                      {% endif %}
+                      {% if r.completed_at %}
+                        <div>Completed: {{ r.completed_at }}</div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center my-3 mb-3">You have not created any requests yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const chartData = {{ (chart_data or {})|tojson|safe }};
+  if (chartData.labels && chartData.counts && chartData.counts.reduce((a,b)=>a+b,0) > 0) {
+    const ctx = document.getElementById('requestsChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: chartData.labels,
+        datasets: [{
+          label: 'Requests',
+          data: chartData.counts
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

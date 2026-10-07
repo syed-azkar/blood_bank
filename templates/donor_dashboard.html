@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Donor Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <h1 class="mb-4 text-danger">
+    Welcome, {{ current_user.name or current_user.username or 'donor' }}
+  </h1>
+
+  <!-- Top cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ total_donations or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Donations</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ assigned_count or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Assigned Requests</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ accepted_count or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Accepted / Scheduled / Completed</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ units_donated or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Units Donated</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom row: Donation history + assigned requests -->
+  <div class="row g-3">
+    <!-- Donation history -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header">
+          <strong>Your Donation History</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if donations %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:6%;">#</th>
+                    <th>Blood Group</th>
+                    <th style="width:15%;">Units</th>
+                    <th style="width:30%;">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for d in donations %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ d.blood_group or '—' }}</td>
+                    <td>{{ d.units or 0 }}</td>
+                    <td>
+                      {% if d.donation_date %}
+                        {{ d.donation_date }}
+                      {% elif d.created_at %}
+                        {{ d.created_at }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center my-3 mb-3">No donations.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Assigned requests -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header">
+          <strong>Assigned Requests</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if assigned_requests %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:6%;">#</th>
+                    <th>Requester</th>
+                    <th>Blood Group</th>
+                    <th style="width:15%;">Units</th>
+                    <th style="width:30%;">Status / Scheduled At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in assigned_requests %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ r.requester_name or '—' }}</td>
+                    <td>{{ r.blood_group or '—' }}</td>
+                    <td>{{ r.units or 0 }}</td>
+                    <td>
+                      <span class="badge bg-primary">{{ r.status or 'open' }}</span>
+                      {% if r.scheduled_at %}
+                        <div class="small text-muted">
+                          {{ r.scheduled_at.replace('T',' ') if 'T' in r.scheduled_at else r.scheduled_at }}
+                        </div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted text-center my-3 mb-3">No assigned requests.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Record Donation{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-danger mb-4">Record New Blood Donation</h1>
+
+    <div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('record_donation') }}">
+
+                <div class="mb-3">
+                    <label for="donor_id" class="form-label fw-bold">Select Donor</label>
+                    <select name="donor_id" id="donor_id" class="form-select" required>
+                        <option value="" data-blood-type="N/A">-- Select Donor --</option>
+                        {% for donor in donors %}
+                        <option value="{{ donor.id }}" data-blood-type="{{ donor.blood_type or 'Unknown' }}">
+                            {{ donor.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="blood_group_display" class="form-label fw-bold">Donor Blood Type</label>
+                    <input type="text" id="blood_group_display" class="form-control fw-bold" readonly value="N/A">
+
+                    <input type="hidden" name="blood_group" id="blood_group_hidden" value="">
+                </div>
+
+                <div class="mb-3">
+                    <label for="units" class="form-label fw-bold">Units Donated (Pints)</label>
+                    <input type="number" name="units" id="units" class="form-control" min="1" required>
+                </div>
+
+                <div class="mb-3">
+    <label for="donation_date" class="form-label fw-bold">Donation Date</label>
+    <input type="date"
+           name="donation_date"
+           id="donation_date"
+           class="form-control"
+           value="{{ request.form.donation_date or today_date }}"
+           required>
+</div>
+
+                <div class="mb-4">
+                    <label for="notes" class="form-label fw-bold">Notes / Remarks (Optional)</label>
+                    <textarea name="notes" id="notes" class="form-control" rows="3">{{ request.form.notes or '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-danger mt-3">Record Donation</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const donorSelect = document.getElementById('donor_id');
+    const bloodTypeDisplay = document.getElementById('blood_group_display');
+    const bloodGroupHidden = document.getElementById('blood_group_hidden');
+
+    function updateBloodType() {
+        // Get the currently selected <option> element
+        const selectedOption = donorSelect.options[donorSelect.selectedIndex];
+
+        // Read the blood type from the custom data-blood-type attribute
+        // Default to 'N/A' if the attribute is missing (e.g., for the '-- Select Donor --' option)
+        const bloodType = selectedOption.getAttribute('data-blood-type') || 'N/A';
+
+        // Update the display field
+        bloodTypeDisplay.value = bloodType;
+
+        // Update the hidden form field (used by Python logic for the store update)
+        bloodGroupHidden.value = (bloodType !== 'N/A' && bloodType !== 'Unknown') ? bloodType : '';
+    }
+
+    // Attach the function to the change event of the select box
+    donorSelect.addEventListener('change', updateBloodType);
+
+    // Call it once on load in case a donor was previously selected (e.g., after a failed form submission)
+    updateBloodType();
+});
+</script>
+{% endblock %}

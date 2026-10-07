@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Staff Dashboard</h1>
+
+  <div class="row mb-4 g-3">
+    <div class="col-6 col-sm-3">
+      <div class="card p-3 h-100">
+        <div class="h2 text-center mb-1">{{ total_requests_open }}</div>
+        <div class="text-center text-muted">Open Requests</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-sm-3">
+      <div class="card p-3 h-100">
+        <div class="h2 text-center mb-1">{{ total_donations }}</div>
+        <div class="text-center text-muted">Donations</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-sm-3">
+      <div class="card p-3 h-100">
+        <div class="h2 text-center mb-1">{{ store_total }}</div>
+        <div class="text-center text-muted">Stock Count (units)</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-sm-3">
+      <div class="card p-3 h-100">
+        <div class="h2 text-center mb-1">{{ store_summary|length }}</div>
+        <div class="text-center text-muted">Blood Groups Tracked</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card p-3" style="min-height:260px;">
+        <h5 class="mb-3">Blood Store Distribution</h5>
+        <div style="height:200px; position:relative;">
+          <canvas id="storeChart" style="max-height:200px; width:100%;"></canvas>
+        </div>
+        <div id="store-empty" class="text-center text-muted" style="display:none; padding:30px;">
+          No blood store data available.
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-3" style="min-height:260px;">
+        <h5 class="mb-3">Monthly Donations (last 12 months)</h5>
+        <div style="height:200px; position:relative;">
+          <canvas id="monthlyChart" style="max-height:200px; width:100%;"></canvas>
+        </div>
+        <div id="monthly-empty" class="text-center text-muted" style="display:none; padding:30px;">
+          No monthly donation data available.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+(function() {
+  // Defensive defaults if backend didn't provide variables
+  const storeSummary = {{ store_summary | tojson | safe }} || {};
+  const monthly = {{ monthly_donations_json | tojson | safe }} || [];
+
+  // Store chart
+  const storeLabels = Object.keys(storeSummary);
+  const storeData = storeLabels.map(k => storeSummary[k] || 0);
+  const storeTotal = storeData.reduce((s, v) => s + (v || 0), 0);
+
+  if (!storeLabels.length || storeTotal === 0) {
+    document.getElementById('storeChart').style.display = 'none';
+    document.getElementById('store-empty').style.display = 'block';
+  } else {
+    document.getElementById('store-empty').style.display = 'none';
+    const ctxStore = document.getElementById('storeChart').getContext('2d');
+    new Chart(ctxStore, {
+      type: 'doughnut',
+      data: { labels: storeLabels, datasets: [{ data: storeData }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  // Monthly chart
+  const months = monthly.map(x => x.month);
+  const totals = monthly.map(x => x.total || 0);
+  const monthlyTotal = totals.reduce((s,v) => s + (v||0), 0);
+
+  if (!months.length || monthlyTotal === 0) {
+    document.getElementById('monthlyChart').style.display = 'none';
+    document.getElementById('monthly-empty').style.display = 'block';
+  } else {
+    document.getElementById('monthly-empty').style.display = 'none';
+    const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(ctxMonthly, {
+      type: 'bar',
+      data: { labels: months, datasets: [{ label: 'Units donated', data: totals }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { ticks: { maxRotation: 45, minRotation: 0 } }, y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+})();
+</script>
+
+<style>
+/* small layout tweaks to ensure compact cards */
+.card.h-100 { display:flex; flex-direction:column; justify-content:center; }
+</style>
+{% endblock %}

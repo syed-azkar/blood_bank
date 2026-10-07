@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0 text-danger">Dashboard</h1>
+  </div>
+
+  <!-- Top metrics cards -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ total_donors or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Registered Donors</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ total_requests or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Blood Requests (all)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ total_donations or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Donations (records)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+      <div class="card h-100 text-center shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title mb-1">{{ store_total or 0 }}</h2>
+          <p class="card-text text-muted mb-0">Stock Count (units in store)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header">
+          <strong>Blood Store Distribution</strong>
+        </div>
+        <div class="card-body">
+          <canvas id="storeDistributionChart" height="220"></canvas>
+          {% if not store_summary %}
+            <p class="text-muted mt-2 mb-0">No inventory data available.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header">
+          <strong>Monthly Donations (last 12 months)</strong>
+        </div>
+        <div class="card-body">
+          <canvas id="monthlyDonationsChart" height="220"></canvas>
+          {% if not monthly_donations_json %}
+            <p class="text-muted mt-2 mb-0">No donation data available for chart.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest open requests -->
+  <div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Latest Open Requests</strong>
+      <a href="{{ url_for('requests_page') }}" class="btn btn-sm btn-outline-primary">View all requests</a>
+    </div>
+    <div class="card-body p-0">
+      {% if latest_open_requests %}
+      <div class="table-responsive">
+        <table class="table table-sm table-striped mb-0 align-middle">
+          <thead>
+            <tr>
+              <th style="width: 5%;">#</th>
+              <th>Requester</th>
+              <th>Blood Group</th>
+              <th>Units</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th style="width: 10%;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in latest_open_requests %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ r.requester_name or r.requester_username or '—' }}</td>
+              <td>{{ r.blood_group or '—' }}</td>
+              <td>{{ r.units or '—' }}</td>
+              <td>
+                <span class="badge bg-secondary">{{ r.status or 'open' }}</span>
+              </td>
+              <td>{{ r.created_at or '—' }}</td>
+              <td>
+                <a href="{{ url_for('request_detail', id=r.id) }}" class="btn btn-sm btn-outline-primary">
+                  View
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted text-center my-3 mb-3">No open requests found.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{# Chart.js (only if not already included in base.html). Duplicate include is harmless. #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ------------------ Blood Store Distribution ------------------
+  const storeData = {{ (store_summary or [])|tojson|safe }};
+  if (storeData.length && document.getElementById('storeDistributionChart')) {
+    const labels = storeData.map(row => row.blood_group || 'Unknown');
+    const data = storeData.map(row => row.total_units || 0);
+
+    const ctxStore = document.getElementById('storeDistributionChart').getContext('2d');
+    new Chart(ctxStore, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Units in stock',
+          data: data
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ------------------ Monthly Donations Chart ------------------
+  const monthlyData = {{ (monthly_donations_json or [])|tojson|safe }};
+  if (monthlyData.length && document.getElementById('monthlyDonationsChart')) {
+    const labels = monthlyData
+      .map(row => row.month_year || '')
+      .reverse(); // oldest first
+
+    const data = monthlyData
+      .map(row => row.total_units || 0)
+      .reverse();
+
+    const ctxMonthly = document.getElementById('monthlyDonationsChart').getContext('2d');
+    new Chart(ctxMonthly, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Units donated',
+          data: data,
+          fill: false,
+          tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

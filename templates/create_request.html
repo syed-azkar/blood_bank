@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Create Blood Request{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-danger mb-4">Create New Blood Request</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+
+                <h4 class="mb-3 text-danger">Requester Details</h4>
+
+                {% if is_requester_role %}
+                <p class="text-muted">Your details are automatically populated.</p>
+
+                <input type="hidden" name="requester_id" value="{{ requester.requester_id }}">
+                <input type="hidden" name="requester_name" value="{{ requester.requester_name }}">
+                <input type="hidden" name="requester_username" value="{{ requester.requester_username }}">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" value="{{ requester.requester_username }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label">Requester Name</label>
+                        <input type="text" class="form-control" value="{{ requester.requester_name }}" readonly>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Requester's Blood Type</label>
+                    <input type="text" class="form-control fw-bold" value="{{ requester.requester_blood_type }}" readonly>
+                </div>
+
+                {% else %}
+                <p class="text-muted">Select the user requesting the blood. Details will auto-populate.</p>
+
+                <div class="mb-3">
+                    <label for="requester_select" class="form-label">Select Requester (Username)</label>
+                    <select name="requester_id" id="requester_select" class="form-select" required>
+                        <option value="">-- Select Requester --</option>
+                        {% for req in requesters_list %}
+                        <option
+                            value="{{ req.id }}"
+                            data-name="{{ req.name }}"
+                            data-blood="{{ req.blood_type }}"
+                            data-username="{{ req.username }}">
+                            {{ req.username }} ({{ req.name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="display_name" class="form-label">Requester Name</label>
+                        <input type="text" id="display_name" class="form-control" value="" readonly>
+                        <input type="hidden" name="requester_name" id="requester_name_hidden" value="">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label for="display_blood_type" class="form-label">Requester's Blood Type</label>
+                        <input type="text" id="display_blood_type" class="form-control fw-bold" value="" readonly>
+                        <input type="hidden" name="requester_username" id="requester_username_hidden" value="">
+                    </div>
+                </div>
+
+                {% endif %}
+
+                <hr class="mt-0">
+
+                <h4 class="mb-3 text-danger">Request Details</h4>
+
+                <div class="mb-3">
+                    <label for="blood_group" class="form-label">Blood Group Required</label>
+                    <select name="blood_group" id="blood_group" class="form-select">
+                        <option value="">-- Select Group (Required) --</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="units" class="form-label">Units Required (Pints)</label>
+                    <input type="number" name="units" id="units" class="form-control" min="1" required>
+                </div>
+
+                <button type="submit" class="btn btn-danger mt-3">Submit Request</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if not is_requester_role %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectEl = document.getElementById('requester_select');
+    const nameDisplayEl = document.getElementById('display_name');
+    const bloodDisplayEl = document.getElementById('display_blood_type');
+    const bloodRequiredEl = document.getElementById('blood_group');
+
+    // Hidden fields for POST submission
+    const nameHiddenEl = document.getElementById('requester_name_hidden');
+    const usernameHiddenEl = document.getElementById('requester_username_hidden');
+
+    // Function to update the fields
+    function updateRequesterDetails() {
+        const selectedOption = selectEl.options[selectEl.selectedIndex];
+
+        if (selectedOption.value) {
+            const name = selectedOption.getAttribute('data-name') || '';
+            const bloodType = selectedOption.getAttribute('data-blood') || '';
+            const username = selectedOption.getAttribute('data-username') || '';
+
+            // 1. Update Display Fields (Read-only)
+            nameDisplayEl.value = name;
+            bloodDisplayEl.value = bloodType;
+
+            // 2. AUTO-POPULATE REQUIRED BLOOD GROUP
+            // Sets the required blood type to the requester's type, but is editable.
+            bloodRequiredEl.value = bloodType;
+
+            // 3. Update Hidden Fields (For Form Submission)
+            nameHiddenEl.value = name;
+            usernameHiddenEl.value = username;
+        } else {
+            // Clear fields if "-- Select Requester --" is chosen
+            nameDisplayEl.value = '';
+            bloodDisplayEl.value = '';
+            bloodRequiredEl.value = '';
+            nameHiddenEl.value = '';
+            usernameHiddenEl.value = '';
+        }
+    }
+
+    // Attach event listener
+    selectEl.addEventListener('change', updateRequesterDetails);
+
+    // Call once on load to populate if a value was previously selected
+    updateRequesterDetails();
+});
+</script>
+{% endif %}
+{% endblock %}

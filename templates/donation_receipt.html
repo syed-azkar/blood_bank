@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Donation Receipt - {{ donation.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card">
+    <div class="card-body">
+      <h3 style="center">Blood Bank Donation Receipt</h3>
+      <p><strong>Receipt ID:</strong> {{ donation.id }}</p>
+
+      <h5>Donation Details</h5>
+      <ul>
+        <li><strong>Donor Name:</strong> {{ donor_name }}</li>
+        <li><strong>Phone:</strong> {{ donor_phone }}</li>
+        <li><strong>Blood Group:</strong> {{ blood_group }}</li>
+        <li><strong>Units Donated:</strong> {{ units }}</li>
+        <li><strong>Date:</strong> {{ created_at }}</li>
+      </ul>
+
+      <hr>
+      <h5>Thank you from the Blood Bank</h5>
+      <p>Dear {{ donor_name }},</p>
+      <p>
+        On behalf of the blood bank and the patients we serve, thank you for your generous donation.
+        Your contribution helps save lives and supports our ongoing mission to provide safe blood
+        to those in need. We appreciate your time and commitment.
+      </p>
+      <p>
+        Please keep a record of this donation and follow any post-donation guidance provided by our staff.
+        If you have any concerns, contact us at the blood bank.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
